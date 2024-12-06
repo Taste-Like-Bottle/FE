@@ -13,7 +13,7 @@ const Result = () => {
     // main.js에서 navigate로 전달한 state를 받아옴
     const { generatedPromptText } = location.state || {};
 
-    const gptAPI = `Bearer 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`;
+    const gptAPI = `Bearer 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`;
     const [errorMessage, setErrorMessage] = useState("");
     const [generatedImage, setGeneratedImage] = useState("");
     const [state, setState] = useState("initial"); 
@@ -83,22 +83,31 @@ const Result = () => {
         }
     };
 
-    const handleDownload = useCallback(() => {
-        fetch(generatedImage, { method: 'GET' }).then((res) => res.blob()).then((blob) => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'image.png';
-            document.body.appendChild(a);
-            a.click();
-            setTimeout((_) => {
-            window.URL.revokeObjectURL(url);
-            }, 1000);
-            a.remove();
-        }).catch((err) => {
-            console.error('err', err);
-        });
-        }, []);
+    const handleDownload = useCallback(async () => {
+        if (!generatedImage) return;
+      
+        try {
+          const response = await axios.get(generatedImage, {
+            responseType: 'blob'
+          });
+      
+          // blob 데이터를 기반으로 URL 생성
+          const url = window.URL.createObjectURL(response.data);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'image.png';
+      
+          document.body.appendChild(a);
+          a.click();
+      
+          // cleanup
+          a.remove();
+          window.URL.revokeObjectURL(url);
+      
+        } catch (error) {
+          console.error('Failed to download image:', error);
+        }
+      }, [generatedImage]);
 
     return (
         <div>
@@ -117,7 +126,6 @@ const Result = () => {
                 )}
                 {generatedImage && (
                     <div style={{ marginTop: "30px" }}>
-                        <h3>Generated Image:</h3>
                         <div
                             className={`image-container spoke-guard ${
                                 state === "spinning" ? "spinning" : ""
@@ -155,12 +163,6 @@ const Result = () => {
                         )}
                     </div>
                 )}
-            </div>
-            <div className='bottom'>
-                <button className='download' onClick={() => {handleDownload()}}>
-                    <LuDownload className='download_icon'/>
-                    Download
-                </button>
             </div>
             <div>
                 {errorMessage}
